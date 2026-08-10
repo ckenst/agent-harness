@@ -10,6 +10,12 @@ This repository is the canonical source for portable personal policies and reusa
 
 The installer detects the operating system for reporting. Vibium and Mailinator CLI are optional and are only detected; installation never downloads or configures them.
 
+## Privacy and security
+
+This repository contains reusable policy and skill definitions, not runtime data. Do not commit API keys, credentials, session data, private inbox contents, generated installation state, backups, or machine-specific configuration. Keep secrets in environment variables or the credential store supported by the relevant tool.
+
+The installer writes generated files and a manifest only beneath the selected home directory. Review every install, upgrade, bootstrap, or uninstall with `--dry-run` before allowing it to change files. Treat additions to `policy/work.md` and `skills/work/` as public information and review them for employer-confidential details before committing.
+
 ## Profiles and agents
 
 - `work`: Codex and Claude by default; Copilot is optional. Installs `tdd`, `vibium-browser`, and `mailinator-inbox`.
@@ -83,6 +89,10 @@ python3 -m unittest discover -s tests -v
 ```
 
 The suite covers profile selection, path resolution, generated headers, skill frontmatter, idempotency, dry runs, backups, verification, safe bootstrap, and conservative uninstall behavior.
+
+## License
+
+Licensed under the [MIT License](LICENSE).
 
 ## Official conventions checked
 

@@ -52,6 +52,13 @@ class HarnessTests(unittest.TestCase):
         self.assertTrue(skill.startswith("---\nname: tdd\n"))
         self.assertIn("Managed: agent-harness/v1", skill)
 
+    def test_skill_metadata_prompts_invoke_the_named_skill(self):
+        for metadata_path in ROOT.glob("skills/*/*/agents/openai.yaml"):
+            skill_name = metadata_path.parents[1].name
+            metadata = metadata_path.read_text(encoding="utf-8")
+            with self.subTest(skill=skill_name):
+                self.assertIn(f'default_prompt: "Use ${skill_name} ', metadata)
+
     def test_home_can_enable_optional_agents(self):
         plan = harness.build_plan(
             ROOT, self.options("home", with_agents=["claude,copilot"])

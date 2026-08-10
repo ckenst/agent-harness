@@ -1,0 +1,19 @@
+# Local secrets and credentials
+.env
+.env.*
+!.env.example
+credentials.json
+credentials.*.json
+secrets.json
+secrets.*.json
+*.key
+*.pem
+
+# Agent Harness installation state and backups
+.agent-harness/
+*.agent-harness-backup-*
+
+# Python and operating-system artifacts
+__pycache__/
+*.py[cod]
+.DS_Store

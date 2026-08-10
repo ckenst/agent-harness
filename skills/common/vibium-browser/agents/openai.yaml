@@ -1,4 +1,4 @@
 interface:
   display_name: "Vibium Browser"
   short_description: "Automate and test browsers with Vibium"
-  default_prompt: "Use -browser to test this browser flow with the project's existing Vibium setup."
+  default_prompt: "Use $vibium-browser to test this browser flow with the project's existing Vibium setup."
