@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mailinator Inbox"
+  short_description: "Test email flows with Mailinator CLI"
+  default_prompt: "Use -inbox to retrieve a verification email with bounded polling."

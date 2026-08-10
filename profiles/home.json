@@ -1,0 +1,7 @@
+{
+  "name": "home",
+  "default_agents": ["codex"],
+  "optional_agents": ["claude", "copilot"],
+  "policies": ["common.md", "home.md"],
+  "skill_groups": ["common"]
+}

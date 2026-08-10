@@ -1,0 +1,7 @@
+{
+  "name": "work",
+  "default_agents": ["codex", "claude"],
+  "optional_agents": ["copilot"],
+  "policies": ["common.md", "work.md"],
+  "skill_groups": ["common", "work"]
+}

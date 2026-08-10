@@ -1,0 +1,4 @@
+interface:
+  display_name: "TDD"
+  short_description: "Run focused red-green-refactor work"
+  default_prompt: "Use  to implement this behavioral change with focused failing and passing test evidence."
