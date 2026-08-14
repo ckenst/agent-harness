@@ -19,7 +19,7 @@ The installer writes generated files and a manifest only beneath the selected ho
 ## Profiles and agents
 
 - `work`: Codex and Claude by default; Copilot is optional. Installs `tdd`, `vibium-browser`, and `mailinator-inbox`.
-- `home`: Codex by default; Claude and Copilot are optional. Installs `tdd` and `vibium-browser`.
+- `home`: Codex by default; Claude and Copilot are optional. Installs `tdd`, `vibium-browser`, and `mailinator-inbox`.
 
 Enable optional agents with `--with claude`, `--with copilot`, or a comma-separated value. Disable a default with `--without claude`.
 

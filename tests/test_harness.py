@@ -42,6 +42,14 @@ class HarnessTests(unittest.TestCase):
         self.assertIn(self.home / ".claude" / "CLAUDE.md", work.files)
         self.assertNotIn(self.home / ".copilot" / "copilot-instructions.md", work.files)
 
+    def test_mailinator_skill_is_common_to_home_and_work_profiles(self):
+        for profile in ("home", "work"):
+            plan = harness.build_plan(ROOT, self.options(profile))
+            skill = self.home / ".agents" / "skills" / "mailinator-inbox" / "SKILL.md"
+
+            with self.subTest(profile=profile):
+                self.assertIn(skill, plan.files)
+
     def test_generated_content_has_profile_source_and_valid_skill_frontmatter(self):
         plan = harness.build_plan(ROOT, self.options("work"))
         instructions = plan.files[self.home / ".codex" / "AGENTS.md"].decode()
