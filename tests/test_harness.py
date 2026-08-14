@@ -60,6 +60,15 @@ class HarnessTests(unittest.TestCase):
         self.assertTrue(skill.startswith("---\nname: tdd\n"))
         self.assertIn("Managed: agent-harness/v1", skill)
 
+    def test_common_policy_requires_safe_local_env_files(self):
+        plan = harness.build_plan(ROOT, self.options("home"))
+        instructions = plan.files[self.home / ".codex" / "AGENTS.md"].decode()
+
+        self.assertIn("credential store supported by the tool or platform", instructions)
+        self.assertIn("ensure it is excluded from Git", instructions)
+        self.assertIn("Treat existing `.env` files as sensitive", instructions)
+        self.assertIn("Keep `.env.example` files secret-free", instructions)
+
     def test_skill_metadata_prompts_invoke_the_named_skill(self):
         for metadata_path in ROOT.glob("skills/*/*/agents/openai.yaml"):
             skill_name = metadata_path.parents[1].name

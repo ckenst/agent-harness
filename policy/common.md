@@ -16,3 +16,12 @@
 
 - Preserve user changes and avoid destructive operations.
 - Never expose credentials, tokens, sessions, caches, trusted-project lists, Git identities, or machine-specific configuration.
+
+## Credentials and local configuration
+
+- Never hard-code or commit credentials, API keys, tokens, or other secrets.
+- Prefer the credential store supported by the tool or platform. Otherwise, inject secrets through environment variables.
+- For local development, follow the repository's existing `.env` convention. Before creating or modifying a secret-bearing `.env` file, ensure it is excluded from Git.
+- Keep `.env.example` files secret-free; include only variable names and safe placeholder values.
+- Treat existing `.env` files as sensitive. Read only values needed for the task and never print, log, or reproduce their contents.
+- Avoid passing secrets directly in command arguments when a safer environment-variable or credential-store mechanism exists.
