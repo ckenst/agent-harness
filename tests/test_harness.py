@@ -53,12 +53,28 @@ class HarnessTests(unittest.TestCase):
     def test_generated_content_has_profile_source_and_valid_skill_frontmatter(self):
         plan = harness.build_plan(ROOT, self.options("work"))
         instructions = plan.files[self.home / ".codex" / "AGENTS.md"].decode()
-        skill = plan.files[self.home / ".agents" / "skills" / "tdd" / "SKILL.md"].decode()
+        skill = (
+            plan.files[self.home / ".agents" / "skills" / "tdd" / "SKILL.md"]
+            .decode()
+            .replace("\r\n", "\n")
+        )
 
         self.assertIn("Profile: work", instructions)
         self.assertIn("Source: agent-harness/policy/common.md", instructions)
         self.assertTrue(skill.startswith("---\nname: tdd\n"))
         self.assertIn("Managed: agent-harness/v1", skill)
+
+    def test_skill_frontmatter_supports_crlf_line_endings(self):
+        skill = harness._decorate_skill(
+            b"---\r\nname: example\r\n---\r\n\r\n# Example\r\n",
+            "skills/common/example/SKILL.md",
+            "home",
+            "SKILL.md",
+        ).decode()
+
+        self.assertTrue(skill.startswith("---\r\nname: example\r\n---\r\n"))
+        self.assertIn("\r\n<!-- Generated file.", skill)
+        self.assertIn("Managed: agent-harness/v1. -->\r\n\r\n# Example\r\n", skill)
 
     def test_common_policy_requires_safe_local_env_files(self):
         plan = harness.build_plan(ROOT, self.options("home"))
@@ -68,6 +84,14 @@ class HarnessTests(unittest.TestCase):
         self.assertIn("ensure it is excluded from Git", instructions)
         self.assertIn("Treat existing `.env` files as sensitive", instructions)
         self.assertIn("Keep `.env.example` files secret-free", instructions)
+
+    def test_common_policy_requires_explicit_authorization_for_remote_git_actions(self):
+        plan = harness.build_plan(ROOT, self.options("home"))
+        instructions = plan.files[self.home / ".codex" / "AGENTS.md"].decode()
+
+        self.assertIn("must not push commits", instructions)
+        self.assertIn("explicitly requests that specific remote action", instructions)
+        self.assertIn("A request to \u201cfinish,\u201d \u201cimplement,\u201d \u201ccommit,\u201d or \u201cprepare a PR\u201d does not authorize pushing", instructions)
 
     def test_skill_metadata_prompts_invoke_the_named_skill(self):
         for metadata_path in ROOT.glob("skills/*/*/agents/openai.yaml"):

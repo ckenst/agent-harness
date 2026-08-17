@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -92,12 +93,18 @@ def _decorate_skill(content: bytes, source: str, profile: str, filename: str) ->
         f"Generated file. Source: agent-harness/{source}. "
         f"Profile: {profile}. {MANAGED_MARKER}."
     )
-    if filename == "SKILL.md" and text.startswith("---\n"):
-        closing = text.find("\n---\n", 4)
-        if closing == -1:
+    if filename == "SKILL.md":
+        frontmatter = re.match(r"^---\r?\n.*?\r?\n---\r?\n", text, re.DOTALL)
+        if frontmatter:
+            newline = "\r\n" if "\r\n" in frontmatter.group() else "\n"
+            position = frontmatter.end()
+            return (
+                text[:position]
+                + f"{newline}<!-- {comment} -->{newline}"
+                + text[position:]
+            ).encode("utf-8")
+        if text.startswith("---"):
             raise ValueError(f"invalid skill frontmatter in {source}")
-        position = closing + len("\n---\n")
-        return (text[:position] + f"\n<!-- {comment} -->\n" + text[position:]).encode("utf-8")
     if filename.endswith((".yaml", ".yml")):
         return (f"# {comment}\n" + text).encode("utf-8")
     if filename.endswith(".md"):

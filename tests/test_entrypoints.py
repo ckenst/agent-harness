@@ -10,7 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class EntrypointTests(unittest.TestCase):
-    @unittest.skipUnless(shutil.which("pwsh"), "PowerShell is not available on this host")
+    @unittest.skipUnless(
+        shutil.which("pwsh") and shutil.which("sh"),
+        "PowerShell and a POSIX shell are required for entrypoint parity testing",
+    )
     def test_shell_and_powershell_generate_equivalent_verification(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary) / "home"
