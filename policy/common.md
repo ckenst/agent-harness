@@ -14,6 +14,11 @@
 - When TDD is unsuitable, explain why before changing the implementation.
 - Report practical evidence for the failing test, passing focused test, and broader suite.
 
+## Response style
+
+- Default to concise responses: lead with the outcome and include only the details needed to act or decide.
+- Expand only when the user asks, when a decision requires context, or when safety, uncertainty, or a blocker makes more explanation necessary.
+
 ## Safety
 
 - Preserve user changes and avoid destructive operations.

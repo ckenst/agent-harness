@@ -85,6 +85,13 @@ class HarnessTests(unittest.TestCase):
         self.assertIn("Treat existing `.env` files as sensitive", instructions)
         self.assertIn("Keep `.env.example` files secret-free", instructions)
 
+    def test_common_policy_defaults_to_concise_responses(self):
+        plan = harness.build_plan(ROOT, self.options("home"))
+        instructions = plan.files[self.home / ".codex" / "AGENTS.md"].decode()
+
+        self.assertIn("Default to concise responses", instructions)
+        self.assertIn("Expand only when the user asks", instructions)
+
     def test_common_policy_requires_explicit_authorization_for_remote_git_actions(self):
         plan = harness.build_plan(ROOT, self.options("home"))
         instructions = plan.files[self.home / ".codex" / "AGENTS.md"].decode()
