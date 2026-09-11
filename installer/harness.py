@@ -12,6 +12,7 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
@@ -228,6 +229,51 @@ def _remove_empty_parents(path: Path, stop: Path) -> None:
         parent = parent.parent
 
 
+def _release_identity(root: Path, plan: Plan, home: Path) -> Dict[str, object]:
+    # Hash deployment inputs without absolute paths, timestamps, or Git metadata.
+    inputs = {"output/" + _relative_to_home(path, home): _sha256(content)
+              for path, content in plan.files.items()}
+    for name in ("VERSION", "installer/harness.py", "installer/install.ps1", "installer/install.sh"):
+        path = root / name
+        if path.is_file():
+            inputs[name] = _sha256(path.read_bytes().replace(b"\r\n", b"\n"))
+    commit = None
+    dirty = None
+    try:
+        # Do not accidentally attribute an exported source directory to a parent repo.
+        top = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                             capture_output=True, text=True, check=True, timeout=10)
+        if Path(top.stdout.strip()).resolve() == root.resolve():
+            commit = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                                    capture_output=True, text=True, check=True, timeout=10).stdout.strip()
+            status = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "--untracked-files=all",
+                                     "--", "VERSION", "policy", "profiles", "skills", "installer", "repo-template"],
+                                    capture_output=True, text=True, check=True, timeout=10)
+            dirty = bool(status.stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        pass
+    version = root / "VERSION"
+    return {"release": version.read_text(encoding="utf-8").strip() if version.is_file() else None,
+            "commit": commit, "dirty": dirty,
+            "fingerprint": _sha256(json.dumps(inputs, sort_keys=True).encode("utf-8"))}
+
+
+def _deployment(root: Path, plan: Plan, options: Options) -> Dict[str, object]:
+    state = _load_state(options.home)
+    current = _release_identity(root, plan, options.home)
+    installed = state.get("release")
+    local_changes = []
+    for entry in state.get("files", []):
+        path = options.home / entry["path"]
+        if not path.is_file() or _sha256(path.read_bytes()) != entry["sha256"]:
+            local_changes.append("~/" + entry["path"])
+    status = "unknown"
+    if installed:
+        status = "current" if installed.get("fingerprint") == current["fingerprint"] else "update-available"
+    return {"installed": installed, "repository": current, "status": status,
+            "local_changes": sorted(local_changes)}
+
+
 def install(root: Path, options: Options) -> Result:
     plan = build_plan(root, options)
     result = Result()
@@ -265,6 +311,13 @@ def install(root: Path, options: Options) -> Result:
             for path, content in sorted(plan.files.items(), key=lambda item: str(item[0]))
         ],
     }
+    if not result.skipped:
+        release = _release_identity(root, plan, options.home)
+        previous = old_state.get("release", {})
+        same = all(previous.get(key) == value for key, value in release.items())
+        release["installed_at"] = (previous.get("installed_at") if same and not result.changed and not result.removed
+                                   else dt.datetime.now(dt.timezone.utc).isoformat())
+        manifest["release"] = release
     manifest_content = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
     state_path = _state_path(options.home)
     if not options.dry_run:
@@ -276,6 +329,7 @@ def install(root: Path, options: Options) -> Result:
 
 def verify(root: Path, options: Options, which: Callable[[str], Optional[str]] = shutil.which) -> Dict[str, object]:
     plan = build_plan(root, options)
+    deployment = _deployment(root, plan, options)
     files: List[Dict[str, str]] = []
     ok = True
     for path, expected in sorted(plan.files.items(), key=lambda item: str(item[0])):
@@ -292,7 +346,8 @@ def verify(root: Path, options: Options, which: Callable[[str], Optional[str]] =
             ok = False
         files.append({"path": "~/" + _relative_to_home(path, options.home), "status": status})
     return {
-        "ok": ok,
+        "ok": ok and deployment["status"] != "update-available" and not deployment["local_changes"],
+        "deployment": deployment,
         "platform": platform.system() or os.name,
         "profile": plan.profile,
         "agents": list(plan.agents),
@@ -418,6 +473,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             if args.json:
                 print(json.dumps(report, indent=2, sort_keys=True))
             else:
+                deployment = report["deployment"]
+                for label, identity in (("Installed", deployment["installed"]), ("Repository", deployment["repository"])):
+                    if not identity:
+                        print(f"{label}: unknown")
+                        continue
+                    commit = (identity.get("commit") or "unknown")[:12]
+                    dirty = {True: "uncommitted changes", False: "clean", None: "Git state unknown"}[identity.get("dirty")]
+                    print(f"{label}: {identity.get('release') or 'unknown'} | {commit} | {dirty}")
+                    if identity.get("installed_at"):
+                        print(f"Installed at: {identity['installed_at']}")
+                print(f"Status: {deployment['status']}")
+                print("Local changes to installed files: " + (", ".join(deployment["local_changes"]) or "None"))
                 print(f"platform={report['platform']} profile={report['profile']} ok={str(report['ok']).lower()}")
                 print("agents=" + ",".join(report["agents"]))
                 print("skills=" + ",".join(report["skills"]))

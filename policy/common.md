@@ -14,6 +14,16 @@
 - When TDD is unsuitable, explain why before changing the implementation.
 - Report practical evidence for the failing test, passing focused test, and broader suite.
 
+## Subagents and delegation
+
+- Use subagents when available for independent, bounded work that can make useful progress in parallel and whose expected benefit outweighs coordination overhead. This is standing authorization to delegate within the user's task scope, subject to the runtime's instructions and limits.
+- Work directly for simple edits, quick lookups, tightly sequential steps, or tasks that require continuous shared context. Multiple requested items alone do not justify delegation.
+- Use at most two concurrent subagents unless the user explicitly requests a larger team and the runtime supports it. Subagents must not delegate further.
+- Give each subagent a clear objective, relevant context, permitted files and actions, completion criteria, and expected output. Require evidence for findings and explicit reporting of unresolved questions or incomplete work.
+- Default delegated investigations and reviews to read-only work. For implementation, assign distinct file ownership or isolated worktrees and coordinate shared dependencies before editing.
+- Briefly explain the assignments when delegating. The primary agent should continue useful independent work, avoid duplicating delegated work, and remain responsible for reconciling findings, inspecting changes, running relevant verification, and delivering one coherent result.
+- Delegation does not expand authorization. All agents must preserve user changes and follow the same repository, credential, and external-action restrictions. Use supported subagent tools; do not create separate user-facing tasks unless the user requests them. If delegation is unavailable, continue directly and report any material limitation.
+
 ## Response style
 
 - Default to concise responses: lead with the outcome and include only the details needed to act or decide.

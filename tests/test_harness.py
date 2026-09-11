@@ -2,6 +2,7 @@ import contextlib
 import hashlib
 import io
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -129,6 +130,59 @@ class HarnessTests(unittest.TestCase):
         result = harness.install(ROOT, self.options("work", dry_run=True))
         self.assertGreater(result.changed, 0)
         self.assertEqual(list(self.home.iterdir()), [])
+
+    def test_release_receipt_and_independent_drift_detection(self):
+        source = Path(self.temp.name) / "source"
+        shutil.copytree(ROOT, source, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        (source / "VERSION").write_text("0.2.0\n")
+        options = self.options()
+        harness.install(source, options)
+        receipt_path = self.home / ".agent-harness/manifest.json"
+        receipt = receipt_path.read_bytes()
+        report = harness.verify(source, options)
+        self.assertEqual(report["deployment"]["status"], "current")
+        self.assertEqual(report["deployment"]["installed"]["release"], "0.2.0")
+        self.assertIsNotNone(report["deployment"]["installed"]["installed_at"])
+        harness.install(source, options)
+        self.assertEqual(receipt_path.read_bytes(), receipt)
+        policy = source / "policy/common.md"
+        policy.write_text(policy.read_text(encoding="utf-8") + "\nNew policy\n", encoding="utf-8")
+        report = harness.verify(source, options)
+        self.assertEqual(report["deployment"]["status"], "update-available")
+        self.assertEqual(report["deployment"]["local_changes"], [])
+        target = self.home / ".codex/AGENTS.md"
+        target.write_text(target.read_text(encoding="utf-8") + "\nLocal edit\n", encoding="utf-8")
+        report = harness.verify(source, options)
+        self.assertEqual(report["deployment"]["local_changes"], ["~/.codex/AGENTS.md"])
+        harness.install(source, options)
+        self.assertTrue(harness.verify(source, options)["ok"])
+        (source / "VERSION").write_text("0.3.0\n")
+        self.assertEqual(harness.verify(source, options)["deployment"]["status"], "update-available")
+
+    def test_git_identity_and_missing_git(self):
+        plan = harness.build_plan(ROOT, self.options())
+        responses = [mock.Mock(stdout=str(ROOT)), mock.Mock(stdout="a" * 40), mock.Mock(stdout=" M policy/common.md")]
+        with mock.patch.object(harness.subprocess, "run", side_effect=responses):
+            identity = harness._release_identity(ROOT, plan, self.home)
+        self.assertEqual(identity["commit"], "a" * 40)
+        self.assertTrue(identity["dirty"])
+        with mock.patch.object(harness.subprocess, "run", side_effect=FileNotFoundError):
+            exported = harness._release_identity(ROOT, plan, self.home)
+        self.assertIsNone(exported["commit"])
+        self.assertIsNone(exported["dirty"])
+        self.assertEqual(identity["fingerprint"], exported["fingerprint"])
+
+    def test_legacy_receipt_has_unknown_release(self):
+        options = self.options()
+        harness.install(ROOT, options)
+        path = self.home / ".agent-harness/manifest.json"
+        state = json.loads(path.read_text())
+        state.pop("release", None)
+        path.write_text(json.dumps(state))
+        report = harness.verify(ROOT, options)
+        self.assertIsNone(report["deployment"]["installed"])
+        self.assertEqual(report["deployment"]["status"], "unknown")
+        self.assertEqual(report["deployment"]["local_changes"], [])
 
     def test_unmanaged_file_is_backed_up_before_replacement(self):
         destination = self.home / ".codex" / "AGENTS.md"

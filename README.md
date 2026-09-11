@@ -50,6 +50,18 @@ Report the active profile, selected agents, installed files and skills, platform
 
 Verification is read-only and exits nonzero when an expected file is missing or differs from the generated source.
 
+## Release and installation tracking
+
+`VERSION` identifies the harness release (starting with `0.1.0`). Bump the minor version for new capabilities, the patch version for fixes or policy refinements, and the major version for incompatible changes.
+
+Run `.\installer\install.ps1 verify --profile work` on Windows or `./installer/install.sh verify --profile work` on macOS to compare the installed release with this checkout. Pass the same profile and optional agent selections used during installation. Add `--json` for structured output, including the full content fingerprint.
+
+The local installation manifest records the release, source Git commit, whether relevant source files had uncommitted changes, a deployment content fingerprint, and the UTC installation time. An unchanged reinstall preserves that timestamp. Git metadata is reported as unknown when Git is unavailable or the source is an exported directory.
+
+Verification reports `current`, `update-available`, or `unknown`, and separately lists installed files changed or missing since installation. `update-available` means the selected deployment differs, not necessarily that its version number is higher. The fingerprint covers generated files and installer code, so changes are detected even without a version bump. A different Git commit alone does not require reinstalling identical content. Old manifests retain their file verification behavior but report an unknown release until the next successful install.
+
+After changing the harness: update `VERSION` as appropriate, run tests, review the install dry run, then install. Committing a change does not install it. The manifest's existing `version` field remains its schema version, separate from the harness release. Deployment receipts stay local and must not be committed.
+
 ## Upgrade
 
 Update this canonical repository with `git`, inspect the diff, run the tests, preview the same install command with `--dry-run`, and then run it without `--dry-run`. Managed files are updated in place; unrelated files are not touched.
