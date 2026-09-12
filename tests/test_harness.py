@@ -99,7 +99,8 @@ class HarnessTests(unittest.TestCase):
 
         self.assertIn("must not push commits", instructions)
         self.assertIn("explicitly requests that specific remote action", instructions)
-        self.assertIn("A request to \u201cfinish,\u201d \u201cimplement,\u201d \u201ccommit,\u201d or \u201cprepare a PR\u201d does not authorize pushing", instructions)
+        self.assertIn("requires approval unless the current user explicitly asked for that push", instructions)
+        self.assertIn("state the target remote and branch before proceeding", instructions)
 
     def test_skill_metadata_prompts_invoke_the_named_skill(self):
         for metadata_path in ROOT.glob("skills/*/*/agents/openai.yaml"):

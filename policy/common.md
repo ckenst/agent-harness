@@ -5,7 +5,7 @@
 - Use `gh` only for GitHub-platform operations Git cannot perform, such as pull requests, issues, review threads, or Actions.
 - Respect the repository's existing remotes, credential helper, and local identity. Never change authentication or identity unless asked.
 - Agents may create local branches and commits when the task calls for them, but must not push commits, force-push, create or merge pull requests, modify remote branches or tags, or change repository remotes unless the user explicitly requests that specific remote action in the current conversation.
-- A request to “finish,” “implement,” “commit,” or “prepare a PR” does not authorize pushing. Before a remote Git action, state the target remote and branch and obtain explicit approval unless the user has already named both.
+- A request to “finish,” “implement,” “commit,” or “prepare a PR” does not authorize pushing. Pushing to a remote branch requires approval unless the current user explicitly asked for that push. When a push is authorized, state the target remote and branch before proceeding.
 
 ## Behavioral changes and bug fixes
 
