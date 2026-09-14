@@ -101,6 +101,38 @@ class HarnessTests(unittest.TestCase):
         self.assertIn("explicitly requests that specific remote action", instructions)
         self.assertIn("A request to \u201cfinish,\u201d \u201cimplement,\u201d \u201ccommit,\u201d or \u201cprepare a PR\u201d does not authorize pushing", instructions)
 
+    def test_common_policy_prefers_discovered_domain_native_external_service_tools(self):
+        plan = harness.build_plan(ROOT, self.options("home"))
+        instructions = plan.files[self.home / ".codex" / "AGENTS.md"].decode()
+
+        expected_distinctions = (
+            "Skills determine how work should be performed",
+            "Plugins, connectors, and tools determine what actions are available",
+            "Choose the domain-native execution tool before selecting a generic mechanism",
+        )
+        expected_in_order = (
+            "Identify the target service and desired operation",
+            "Load any mandatory skills",
+            "Search both explicitly listed and deferred or lazy-loaded tools",
+            "Connected service plugin, app, or MCP tool",
+            "Repository-supported CLI",
+            "Authenticated UI automation",
+            "Raw API using an existing credential store",
+            "Manual instructions",
+            "Absence from the initial tool list does not prove",
+        )
+        positions = [instructions.index(text) for text in expected_in_order]
+
+        for distinction in expected_distinctions:
+            self.assertIn(distinction, instructions)
+        self.assertEqual(positions, sorted(positions))
+        self.assertLess(
+            instructions.index("domain-native execution tool"),
+            instructions.index("Authenticated UI automation"),
+        )
+        self.assertIn("tool_search", instructions)
+        self.assertIn("ALL_TOOLS", instructions)
+
     def test_skill_metadata_prompts_invoke_the_named_skill(self):
         for metadata_path in ROOT.glob("skills/*/*/agents/openai.yaml"):
             skill_name = metadata_path.parents[1].name

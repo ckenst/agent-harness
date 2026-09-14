@@ -7,6 +7,23 @@
 - Agents may create local branches and commits when the task calls for them, but must not push commits, force-push, create or merge pull requests, modify remote branches or tags, or change repository remotes unless the user explicitly requests that specific remote action in the current conversation.
 - A request to “finish,” “implement,” “commit,” or “prepare a PR” does not authorize pushing. Before a remote Git action, state the target remote and branch and obtain explicit approval unless the user has already named both.
 
+## External service execution
+
+Skills determine how work should be performed. Plugins, connectors, and tools determine what actions are available. Choose the domain-native execution tool before selecting a generic mechanism such as browser automation.
+
+Before executing an operation against an external service:
+
+1. Identify the target service and desired operation.
+2. Load any mandatory skills, but do not let a mechanism-specific skill determine the execution method yet.
+3. Search both explicitly listed and deferred or lazy-loaded tools for a domain-native connector. Use `tool_search` when available; otherwise inspect the runtime tool registry, such as `ALL_TOOLS`.
+4. Prefer execution mechanisms in this order:
+   1. Connected service plugin, app, or MCP tool.
+   2. Repository-supported CLI.
+   3. Authenticated UI automation.
+   4. Raw API using an existing credential store.
+   5. Manual instructions.
+5. Absence from the initial tool list does not prove that a capability is unavailable. Complete deferred-tool discovery before using a fallback or suggesting installation.
+
 ## Behavioral changes and bug fixes
 
 - Default to test-driven development: identify or write a focused failing test, confirm the expected failure, make the smallest implementation change, confirm the focused test passes, refactor, and run the broader relevant suite.
